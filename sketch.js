@@ -8,7 +8,7 @@ let font, textFrame
 let passages // our json file input
 
 function preload() {
-    font = loadFont('data/meiryo.ttf')
+    font = loadFont('data/giga.ttf')
     passages = loadJSON("passages.json")
     textFrame = loadImage('data/textFrame.png')
 }

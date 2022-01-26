@@ -114,7 +114,7 @@ class DialogBox {
             }
 
             // advance the text
-            cursor.x += textWidth(letter)
+            cursor.x += this.wordWidth(letter)
         }
 
         if (frameCount % 1 === 0) {
@@ -130,4 +130,143 @@ class DialogBox {
         }
         cam.endHUD()
     }
+
+    /**
+     * this can't be large because our charWidth graphics buffer is of finite
+     * size! note that we must also take into account our webpage scaling in
+     * chrome; I have it set at 125%, a significant bump up from default.
+     * @type {number}
+     */
+    // const FONT_SIZE = 18
+    // const LETTER_SPACING = 1.25
+    // const SPACE_WIDTH = FONT_SIZE / 2
+
+
+    preload() {
+        font = loadFont('data/giga.ttf')
+        // font = loadFont("data/meiryo.ttf")
+    }
+
+
+    setup() {
+        // createCanvas(640, 360) // , WEBGL) // we don't need WEBGL yet
+        createCanvas(640, 360);
+        colorMode(HSB, 360, 100, 100, 100)
+        textFont(font, 18)
+        // textAlign(CENTER, CENTER)
+        background(0, 0, 0)
+
+        fill(0, 0, 100)
+        noStroke()
+
+        // codyCharWidth("d")
+        // charWidth("d")
+        // wordWidth("d")
+
+        // displayPassage("This is our test statement: 'Test test! Can you hear" +
+        //     " me?' I'm now testing character wrap! Oh, I need to introduce" +
+        //     " myself... or the normal person would. I'm too secure! But you can" +
+        //     " hack my secret 100-word password full of junk words and bad" +
+        //     " words and weirdos and all the words you could name. Then you'll" +
+        //     " get a proper introduction - in person!")
+
+        let input = "I couldn't even get one pixel working because my" +
+            " generatePixel function didn't work. I need four nested loops to" +
+            " be able to complete my task because I don't know how to do this" +
+            " otherwise. It seems like I'm loading just fine."
+
+        // displayPassage(input)
+    }
+
+    displayPassage(passage) {
+        let cursor = new p5.Vector(0, 100)
+        let EXTRA_SPACING = 1
+        // loop through every character in passage
+        for (let char of passage) {
+            // in the giga.ttf font, spaces are actually displayed as ☒s without
+            // as much width. That's why we need a special case and a continue
+            // statement. This is also the case in charWidth.
+            if (char === ' ') {
+                cursor.x += charWidth(' ')
+                // now we can continue this loop; there's nothing to draw.
+                continue
+            }
+
+            text(char, cursor.x, cursor.y)
+
+            if (charWidth(char) * 2 + cursor.x > width) {
+                cursor.y += textAscent() + textDescent() * 2
+                cursor.x = 0
+            } else {
+                cursor.x += charWidth(char) + EXTRA_SPACING
+            }
+        }
+    }
+
+
+    /**
+     * use charWidth to find the width of more than one character
+     *
+     * "Hello" → word
+     *
+     * for letter of word:
+     *     call charWidth, add to sum
+     * at the end of program, return the sum
+     */
+    wordWidth(word) {
+        let sum = 0
+
+        for (let letter of word) {
+            sum += this.charWidth(letter)
+        }
+
+        return sum
+    }
+
+
+
+    /*  return the width in pixels of char using the pixels array
+     */
+    charWidth(char) {
+        if (char === ' ') {
+            // console.log("letterWidth: " + 7/18 * FONT_SIZE)
+            return 7/18 * 18 // size of the character m divided by 2
+        } else {
+            let g = createGraphics(18, 18 * 1.5)
+            g.colorMode(HSB, 360, 100, 100, 100)
+            g.textFont(font, 18)
+            g.background(0, 0, 0)
+            g.fill(0, 0, 100)
+
+            let d = g.pixelDensity()
+            g.text(char, 0, textAscent())
+            // text(char, 0, textAscent())
+            g.loadPixels()
+            loadPixels()
+
+            let endX = 0
+
+            // loop through every pixel (column-major)
+            for (let x = 0; x < g.width; x++) {
+                for (let y = 0; y < g.height; y++) {
+                    // I need to derive this formula.
+                    let off = (y * g.width + x) * d * 4
+                    if (g.pixels[off] !== 0 || g.pixels[off+1] !== 0 ||
+                        g.pixels[off+2] !== 0) {
+                        // print("?")
+                        // endX = max(x, endX)
+                        endX = x
+                        // stroke(100, 100, 100)
+                        // point(x, y)
+                        // we don't need to search for any more white pixels: break!
+                        break
+                    }
+                }
+            }
+
+            // console.log("endX: " + endX)
+            return endX
+        }
+    }
+
 }
