@@ -27,6 +27,9 @@ class DialogBox {
 
         // the frame for the text
         this.textFrame = textFrame
+
+        // a cache of letter widths
+        this.cache = {}
     }
 
     // I looked for this function online, so we can use it as a coding sprint.
@@ -56,7 +59,7 @@ class DialogBox {
         // won't be clipped at the top.
         let cursor = new p5.Vector(margin, 270 + textAscent())
         textSize(18)
-        text("ADAM", 62, 260)
+        text("A", 62, 260)
         textSize(14)
 
         // the current sets of highlight indices
@@ -69,52 +72,59 @@ class DialogBox {
         for (let i = 0; i < this.index; i++) {
             let letter = passage[i]
 
-            // draw the letter
-            try { // try to retrieve a set of highlight indices
-                if (
-                    i >= highlightIndexSet[0].start &&
-                    i <= highlightIndexSet[0].end
-                )
-                    fill(60, 100, 100)
-                else if (
-                    i >= highlightIndexSet[1].start &&
-                    i <= highlightIndexSet[1].end
-                )
-                    fill(60, 100, 100)
-                else
+            if (letter === ' ') {
+                cursor.x += this.charWidth(' ')
+            }
+            else {
+                // draw the letter
+                try { // try to retrieve a set of highlight indices
+                    if (
+                        i >= highlightIndexSet[0].start &&
+                        i <= highlightIndexSet[0].end
+                    )
+                        fill(60, 100, 100)
+                    else if (
+                        i >= highlightIndexSet[1].start &&
+                        i <= highlightIndexSet[1].end
+                    )
+                        fill(60, 100, 100)
+                    else
+                        fill(0, 0, 100)
+                } catch { // if there's no index or too many indices, fill white
                     fill(0, 0, 100)
-            } catch { // if there's no index or too many indices, fill white
-                fill(0, 0, 100)
-            }
-            text(letter, cursor.x, cursor.y)
-
-            // // if the width of our letter and our x position are greater
-            // // than width-margin, we start a new line by modifying the
-            // // current cursor we have.
-            // if (cursor.x + textWidth(letter) > width - margin) {
-            //     cursor.x = margin
-            //     cursor.y += textAscent() + textDescent() + 2
-            //     continue
-            // } old letter wrap
-
-            // more advanced word wrap
-            if (letter === " ") {
-                let currentDelimiter = i
-                let nextDelimiter = passage.indexOf(" ", i+1)
-                let nextWord = passage.substring(
-                    currentDelimiter,
-                    nextDelimiter + 1 // add one to include the space
-                )
-
-                if (textWidth(nextWord) + cursor.x >= width-margin) {
-                    cursor.x = margin
-                    cursor.y += textAscent() + textDescent() + 2
-                    continue
                 }
+                text(letter, cursor.x, cursor.y)
             }
 
-            // advance the text
-            cursor.x += this.wordWidth(letter)
+                // // if the width of our letter and our x position are greater
+                // // than width-margin, we start a new line by modifying the
+                // // current cursor we have.
+                // if (cursor.x + textWidth(letter) > width - margin) {
+                //     cursor.x = margin
+                //     cursor.y += textAscent() + textDescent() + 2
+                //     continue
+                // } old letter wrap
+
+                // more advanced word wrap
+                if (letter === " ") {
+                    let currentDelimiter = i
+                    let nextDelimiter = passage.indexOf(" ", i+1)
+                    let nextWord = passage.substring(
+                        currentDelimiter,
+                        nextDelimiter + 1 // add one to include the space
+                    )
+
+                    if (textWidth(nextWord) + cursor.x >= width-margin) {
+                        cursor.x = margin
+                        cursor.y += textAscent() + textDescent() + 2
+                        continue
+                    }
+                }
+
+                // advance the text
+                cursor.x += this.wordWidth(letter)
+
+
         }
 
         if (frameCount % 1 === 0) {
@@ -140,43 +150,6 @@ class DialogBox {
     // const FONT_SIZE = 18
     // const LETTER_SPACING = 1.25
     // const SPACE_WIDTH = FONT_SIZE / 2
-
-
-    preload() {
-        font = loadFont('data/giga.ttf')
-        // font = loadFont("data/meiryo.ttf")
-    }
-
-
-    setup() {
-        // createCanvas(640, 360) // , WEBGL) // we don't need WEBGL yet
-        createCanvas(640, 360);
-        colorMode(HSB, 360, 100, 100, 100)
-        textFont(font, 18)
-        // textAlign(CENTER, CENTER)
-        background(0, 0, 0)
-
-        fill(0, 0, 100)
-        noStroke()
-
-        // codyCharWidth("d")
-        // charWidth("d")
-        // wordWidth("d")
-
-        // displayPassage("This is our test statement: 'Test test! Can you hear" +
-        //     " me?' I'm now testing character wrap! Oh, I need to introduce" +
-        //     " myself... or the normal person would. I'm too secure! But you can" +
-        //     " hack my secret 100-word password full of junk words and bad" +
-        //     " words and weirdos and all the words you could name. Then you'll" +
-        //     " get a proper introduction - in person!")
-
-        let input = "I couldn't even get one pixel working because my" +
-            " generatePixel function didn't work. I need four nested loops to" +
-            " be able to complete my task because I don't know how to do this" +
-            " otherwise. It seems like I'm loading just fine."
-
-        // displayPassage(input)
-    }
 
     displayPassage(passage) {
         let cursor = new p5.Vector(0, 100)
@@ -228,44 +201,52 @@ class DialogBox {
     /*  return the width in pixels of char using the pixels array
      */
     charWidth(char) {
-        if (char === ' ') {
-            // console.log("letterWidth: " + 7/18 * FONT_SIZE)
-            return 7/18 * 18 // size of the character m divided by 2
-        } else {
-            let g = createGraphics(18, 18 * 1.5)
-            g.colorMode(HSB, 360, 100, 100, 100)
-            g.textFont(font, 18)
-            g.background(0, 0, 0)
-            g.fill(0, 0, 100)
+        if (this.cache[char] !== undefined) {
+            // console.log(this.cache[char])
+            return this.cache[char]
+        }
+        else {
+            if (char === ' ') {
+                // console.log("letterWidth: " + 7/18 * FONT_SIZE)
+                return 7/18 * 18 // size of the character m divided by 2
+            } else {
+                let g = createGraphics(18, 18 * 1.5)
+                g.colorMode(HSB, 360, 100, 100, 100)
+                g.textFont(font, 18)
+                g.background(0, 0, 0)
+                g.fill(0, 0, 100)
 
-            let d = g.pixelDensity()
-            g.text(char, 0, textAscent())
-            // text(char, 0, textAscent())
-            g.loadPixels()
-            loadPixels()
+                let d = g.pixelDensity()
+                g.text(char, 0, textAscent())
+                // text(char, 0, textAscent())
+                g.loadPixels()
+                loadPixels()
 
-            let endX = 0
+                let endX = 0
 
-            // loop through every pixel (column-major)
-            for (let x = 0; x < g.width; x++) {
-                for (let y = 0; y < g.height; y++) {
-                    // I need to derive this formula.
-                    let off = (y * g.width + x) * d * 4
-                    if (g.pixels[off] !== 0 || g.pixels[off+1] !== 0 ||
-                        g.pixels[off+2] !== 0) {
-                        // print("?")
-                        // endX = max(x, endX)
-                        endX = x
-                        // stroke(100, 100, 100)
-                        // point(x, y)
-                        // we don't need to search for any more white pixels: break!
-                        break
+                // loop through every pixel (column-major)
+                for (let x = 0; x < g.width; x++) {
+                    for (let y = 0; y < g.height; y++) {
+                        // I need to derive this formula.
+                        let off = (y * g.width + x) * d * 4
+                        if (g.pixels[off] !== 0 || g.pixels[off+1] !== 0 ||
+                            g.pixels[off+2] !== 0) {
+                            // print("?")
+                            // endX = max(x, endX)
+                            endX = x
+                            // stroke(100, 100, 100)
+                            // point(x, y)
+                            // we don't need to search for any more white pixels: break!
+                            break
+                        }
                     }
                 }
-            }
 
-            // console.log("endX: " + endX)
-            return endX
+                // console.log("endX: " + endX)
+                console.log("Hey! I'm an unknown character!")
+                this.cache[char] = endX
+                return endX
+            }
         }
     }
 
