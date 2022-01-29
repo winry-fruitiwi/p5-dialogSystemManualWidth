@@ -1,5 +1,5 @@
 class DialogBox {
-    constructor(passages, highlightIndices, textFrame) {
+    constructor(passages, highlightIndices, textFrame, passageSkipMillis, jumpMillis) {
         // this is the old hard-coded passage
         //this.passage = "So, you've accessed a network station. Well done," +
         //   " Samus. I have reviewed your vital signs and video log from the" +
@@ -30,6 +30,13 @@ class DialogBox {
 
         // a cache of letter widths
         this.cache = {}
+
+        // a list of times for when to skip to the next passage.
+        this.skipMillis = passageSkipMillis
+
+        // Adam doesn't talk for a while, so we shouldn't start advancing
+        // until he's ready to talk to us in the cutscene
+        this.jumpMillis = jumpMillis
     }
 
     // I looked for this function online, so we can use it as a coding sprint.
@@ -52,21 +59,24 @@ class DialogBox {
         this.renderTextFrame(cam)
 
         cam.beginHUD(p5._renderer, width, height)
+
+        // console.log(this.charWidth(' '))
+
         // the margin for all sides
         let margin = 72
         // our current position. since text coordinates start at bottom
         // left, we have to modify the height so that even the largest font
         // won't be clipped at the top.
         let cursor = new p5.Vector(margin, 270 + textAscent())
-        textSize(18)
-        text("A", 62, 260)
-        textSize(14)
 
         // the current sets of highlight indices
         let highlightIndexSet = this.highlightIndices[this.passageIndex]
 
         // our current passage
         let passage = this.passages[this.passageIndex]
+
+        // our current skipMillis
+        let skipMillis = this.skipMillis[this.passageIndex]
 
         // loop through every letter in our passage
         for (let i = 0; i < this.index; i++) {
@@ -79,13 +89,13 @@ class DialogBox {
                 // draw the letter
                 try { // try to retrieve a set of highlight indices
                     if (
-                        i >= highlightIndexSet[0].start &&
-                        i <= highlightIndexSet[0].end
+                        i >= highlightIndexSet[0].start - 1 &&
+                        i <= highlightIndexSet[0].end - 1
                     )
                         fill(60, 100, 100)
                     else if (
-                        i >= highlightIndexSet[1].start &&
-                        i <= highlightIndexSet[1].end
+                        i >= highlightIndexSet[1].start - 1 &&
+                        i <= highlightIndexSet[1].end - 1
                     )
                         fill(60, 100, 100)
                     else
@@ -127,17 +137,36 @@ class DialogBox {
 
         }
 
-        if (frameCount % 1 === 0) {
-            this.index += 1
-            this.index = constrain(this.index, 0, passage.length-1)
+        // if we've gone through the seconds in jumpMillis, we're ready to
+        // advance our passages.
+        if (millis() >= this.jumpMillis) {
+            if (frameCount % 1 === 0) {
+                this.index += 1
+                this.index = constrain(this.index, 0, passage.length-1)
+            }
+
+            textSize(18)
+            fill(0, 0, 100)
+            this.displayPassage("ADAM", 62, 260)
+            textSize(14)
+
             if (this.index >= passage.length-1) {
 
-                if (this.passageIndex < this.passages.length-1) {
+                if (
+                    this.passageIndex < this.passages.length-1 &&
+                    millis() >= skipMillis
+                ) {
                     this.index = 0
                     this.passageIndex += 1
                 }
             }
         }
+
+        /* TODO pseudocode:
+               only advance passages when the milliseconds advance. Make a
+               new variable for the current skipMillis.
+        */
+
         cam.endHUD()
     }
 
@@ -151,8 +180,8 @@ class DialogBox {
     // const LETTER_SPACING = 1.25
     // const SPACE_WIDTH = FONT_SIZE / 2
 
-    displayPassage(passage) {
-        let cursor = new p5.Vector(0, 100)
+    displayPassage(passage, x, y) {
+        let cursor = new p5.Vector(x, y)
         let EXTRA_SPACING = 1
         // loop through every character in passage
         for (let char of passage) {
@@ -160,18 +189,18 @@ class DialogBox {
             // as much width. That's why we need a special case and a continue
             // statement. This is also the case in charWidth.
             if (char === ' ') {
-                cursor.x += charWidth(' ')
+                cursor.x += this.charWidth(' ')
                 // now we can continue this loop; there's nothing to draw.
                 continue
             }
 
             text(char, cursor.x, cursor.y)
 
-            if (charWidth(char) * 2 + cursor.x > width) {
+            if (this.charWidth(char) * 2 + cursor.x > width) {
                 cursor.y += textAscent() + textDescent() * 2
-                cursor.x = 0
+                cursor.x = x
             } else {
-                cursor.x += charWidth(char) + EXTRA_SPACING
+                cursor.x += this.charWidth(char) + EXTRA_SPACING
             }
         }
     }
@@ -208,6 +237,7 @@ class DialogBox {
         else {
             if (char === ' ') {
                 // console.log("letterWidth: " + 7/18 * FONT_SIZE)
+                this.cache[char] = 7/18 * 18
                 return 7/18 * 18 // size of the character m divided by 2
             } else {
                 let g = createGraphics(18, 18 * 1.5)
