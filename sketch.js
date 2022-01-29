@@ -9,7 +9,7 @@ let passages // our json file input
 
 function preload() {
     font = loadFont('data/giga.ttf')
-    passages = loadJSON("test.json")
+    passages = loadJSON("passages.json")
     textFrame = loadImage('data/textFrame.png')
     voice = loadSound('data/artaria.mp3', 0, 0)
 }
@@ -21,7 +21,7 @@ let highlightList = [] // a list of tuples specifying highlights and indexes
 let msPerPassage = [] // how long to wait before advancing a passage
 // there's a period of no dialog box before the text starts. This represents
 // how long that is.
-let jumpMillis = 16000
+let jumpMillis = 15500
 let dialogBox, cam
 
 function setup() {
@@ -33,11 +33,25 @@ function setup() {
     voice.play()
     p5amp = new p5.Amplitude()
 
+    // look through the JSON for the passages and highlight indices
     for (let i = 0; i < Object.keys(passages).length; i++) {
         textList.push(passages[i].text)
         highlightList.push(passages[i].highlightIndices)
-        msPerPassage.push(passages[i].ms)
     }
+
+    // look through the JSON in the same manner as last time, except we are
+    // looking at the next key instead of the current key as we iterate. The
+    // last time I did this, I thought the timestamps were the end of the
+    // paragraph, not the start. This means we don't care about the start of
+    // the first passage, but we care about everything else. Then we need to
+    // stuff in a final value so that our last passage advances. I doubt
+    // this is how the Metroid Dread producers did it; it's long.
+    for (let i = 0; i < Object.keys(passages).length - 1; i++) {
+        msPerPassage.push(passages[i + 1].ms)
+    }
+
+    msPerPassage.push(122426) // that crazy number is when the last
+    // paragraph ends
 
     // console.log(textList)
     // console.log(highlightList)
