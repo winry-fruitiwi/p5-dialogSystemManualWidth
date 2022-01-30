@@ -83,7 +83,7 @@ class DialogBox {
             let letter = passage[i]
 
             if (letter === ' ') {
-                cursor.x += this.charWidth(' ')
+                cursor.x += this.charWidth('m')/2
             }
             else {
                 // draw the letter
@@ -124,17 +124,17 @@ class DialogBox {
                         nextDelimiter + 1 // add one to include the space
                     )
 
-                    if (textWidth(nextWord) + cursor.x >= width-margin) {
+                    if (this.wordWidth(nextWord) + cursor.x >= width-margin) {
                         cursor.x = margin
                         cursor.y += textAscent() + textDescent() + 2
                         continue
                     }
                 }
 
-                // advance the text
-                cursor.x += this.wordWidth(letter)
-
-
+                if (letter !== ' ') {
+                    // advance the text
+                    cursor.x += this.charWidth(letter)
+                }
         }
 
         // if we've gone through the seconds in jumpMillis, we're ready to
@@ -237,7 +237,8 @@ class DialogBox {
         else {
             if (char === ' ') {
                 // console.log("letterWidth: " + 7/18 * FONT_SIZE)
-                this.cache[char] = 7/18 * 18
+                // console.log("hello")
+                // this.cache[char] = 7/18 * 18
                 return 7/18 * 18 // size of the character m divided by 2
             } else {
                 let g = createGraphics(18, 18 * 1.5)
