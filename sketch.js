@@ -27,7 +27,7 @@ let dialogBox, cam
 function setup() {
     createCanvas(640, 360, WEBGL)
     colorMode(HSB, 360, 100, 100, 100)
-    textFont(font, 14)
+    textFont(font, 15)
     cam = new Dw.EasyCam(this._renderer, {distance: 240});
 
     voice.play()

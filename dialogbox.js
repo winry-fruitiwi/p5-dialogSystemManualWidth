@@ -150,8 +150,17 @@ class DialogBox {
             this.displayPassage("ADAM", 62, 260)
             textSize(14)
 
-            if (this.index >= passage.length-1) {
+            if (this.index === passage.length - 1) {
+                // use a sine wave to mimic a breathing alpha
+                fill(189, 19, 80, 20 + 80*abs(sin(frameCount/30)))
+                triangle(
+                    width-margin - 10, 330,
+                    width-margin, 330,
+                    width-margin - 5, 337
+                    )
+            }
 
+            if (this.index >= passage.length-1) {
                 if (
                     this.passageIndex < this.passages.length-1 &&
                     millis() >= skipMillis
